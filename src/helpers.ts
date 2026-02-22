@@ -153,20 +153,50 @@ export const get_products = (states, config, is_shopping_list = false) => {
   }
   if (config?.exclude) {
     for (const [exclude_key, exclude_values] of Object.entries(config.exclude)) {
-      for (const exclude_value of Object.values(exclude_values)) {
+      if (exclude_key === "userfields") {
         productArray = productArray.filter(
-          ([, value]) => (value as ProductConfig).attributes[exclude_key] !== exclude_value,
-        );
+          ([, value]) => {
+            let retVal = true;
+            for (const [value_userfields_key, value_userfields_values] of Object.entries((value as ProductConfig).attributes[exclude_key])) {
+              if (value_userfields_values != null) {
+                if (exclude_values[value_userfields_key] === value_userfields_values) {
+                  retVal = false;
+                }
+              }
+            }
+            return retVal;
+          });
+        }
+      else {
+        for (const exclude_value of Object.values(exclude_values)) {
+          productArray = productArray.filter(
+            ([, value]) => (value as ProductConfig).attributes[exclude_key] !== exclude_value,
+          );
+        }
       }
     }
   }
   if (config?.include) {
     for (const [include_key, include_values] of Object.entries(config.include)) {
-      for (const include_value of Object.values(include_values)) {
-        productArray = productArray.filter(
-          ([, value]) => (value as ProductConfig).attributes[include_key] === include_value,
-        );
-      }
+      productArray = productArray.filter(
+        ([, value]) => {
+          let retVal = false;
+          if (include_key === "userfields") {
+            for (const [value_userfields_key, value_userfields_values] of Object.entries((value as ProductConfig).attributes[include_key])) {
+              if (value_userfields_values != null) {
+                if (include_values[value_userfields_key] === value_userfields_values) {
+                  retVal = true;
+                }
+              }
+            }
+          }
+          for (const include_value of Object.values(include_values)) {
+            if ((value as ProductConfig).attributes[include_key] === include_value) {
+              retVal = true;
+            }
+          }
+          return retVal;
+      });
     }
   }
   productArray = sorter(productArray, config?.sort_by);
